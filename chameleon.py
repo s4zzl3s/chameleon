@@ -14,6 +14,8 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
 background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+font = pygame.font.SysFont("Comic Sans MS", 26)
+title_font = pygame.font.SysFont("Comic Sans MS", 72)
 
 
 # load and scale images
@@ -41,8 +43,8 @@ background.blit(forest_img, (-10, -10))
 manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT), theme_path="gui_theme.json")
 
 
-start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 475), (100, 50)),
-                                             text='Start',
+start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((250, 480), (150, 75)),
+                                             text='Start Game',
                                              manager=manager)
 
 red_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((520, 475), (250, 25)), 
@@ -56,6 +58,16 @@ green_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect(
 blue_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((520, 545), (250, 25)), 
                                                     start_value= 5, value_range=(0, 255), 
                                                     manager=manager)
+
+
+# initialize text
+red_label = font.render("R", True, (255, 0, 0))
+
+green_label = font.render("G", True, (0, 255, 0))
+
+blue_label = font.render("B", True, (0, 0, 255))
+
+title_label = title_font.render("RGB Chameleon", True, (255, 255, 0))
 
 
 # random color
@@ -102,6 +114,14 @@ while running:
         screen.fill(random_color)
     else:
         screen.blit(background, (0,0))
+        screen.blit(title_label, (100, 50))
+
+
+
+    # draw color labels
+    screen.blit(red_label, (490, 465))
+    screen.blit(green_label, (490, 500))
+    screen.blit(blue_label, (490, 535))
 
 
     screen.blit(twig_img, (-10, 200))

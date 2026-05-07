@@ -4,14 +4,18 @@
         "colours":
         {
             "normal_border": "White",
-            "normal_bg": "SlateGray",
+            "normal_bg": "#646464",
             "normal_text": "White"
         },
         "misc":
         {
             "shape": "rounded_rectangle",
             "shape_corner_radius": "10",
-            "border_width": "2"
+            "border_width": "3"
+        },
+        "font":
+        {
+            "name": "Comic Sans MS"
         }
     },
     "horizontal_slider":
