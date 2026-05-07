@@ -34,7 +34,7 @@
         "shape": "rounded_rectangle",
         "shape_corner_radius": "10",
         "enable_arrow_buttons": "0",
-        "sliding_button_width": "15"
+        "sliding_button_width": "20"
         }
     },
     "horizontal_slider.button":
@@ -42,7 +42,7 @@
         "misc":
         {
         "shape": "rounded_rectangle",
-        "shape_corner_radius": "10",
+        "shape_corner_radius": "8",
         "border_width": "1"
         }
     },
