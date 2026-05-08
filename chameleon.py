@@ -1,6 +1,7 @@
 import pygame
 import pygame_gui
 import random
+import math
 
 # screen dimensions
 SCREEN_WIDTH = 800
@@ -104,7 +105,7 @@ screen_color = (0,0,0)
 text_color = (255, 255, 255)
 
 
-# countdown timer functions
+# countdown timer
 def set_countdown(time_offset) -> int:
     current_time = pygame.time.get_ticks()
     return current_time + time_offset
@@ -116,10 +117,12 @@ target_time = 0
 
 
 # calculate score
+score = 0
 def calculate_score(rand_r, rand_g, rand_b, r, g, b):
     delta_r = abs(rand_r - r)
     delta_g = abs(rand_g - g)
     delta_b = abs(rand_b - b)
+    return max(math.ceil((300 - (delta_r + delta_g + delta_b)) / 3), 0)
 
 clock = pygame.time.Clock()
 running = True
@@ -133,9 +136,10 @@ while running:
             running = False
 
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            click_sfx.set_volume(0.5)
-            click_sfx.play()
+
             if event.ui_element == start_button:
+                click_sfx.set_volume(0.5)
+                click_sfx.play()
                 ticking_sfx.set_volume(0.5)
                 ticking_sfx.play()
                 target_time = set_countdown(10000)
@@ -145,7 +149,10 @@ while running:
                 game_active = True
 
             if event.ui_element == back_button:
+                click_sfx.set_volume(0.5)
+                click_sfx.play()
                 game_active = False
+                
         
         manager.process_events(event)
 
@@ -161,19 +168,23 @@ while running:
 
     # render only in active game
     if game_active:
+        screen.fill(screen_color)
+        time_left = 0.0
 
         if timer_running:
+            time_left = round((countdown_time_left(target_time) / 1000.0), 1)
             start_button.hide()
             back_button.hide()
+            score = calculate_score(screen_color[0], screen_color[1],
+                                screen_color[2], cham_r, cham_g, cham_b)
+            
         else:
             ticking_sfx.stop()
             start_button.show()
             back_button.show()
-            score_label = font_big.render(f"You've got 0 points!", True, text_color)
-            screen.blit(score_label, (200, 50))
+            score_label = font_big.render(f"You've got {score} points!", True, text_color)
+            screen.blit(score_label, (200, 80))
 
-        screen.fill(screen_color)
-        time_left = max((countdown_time_left(target_time) / 1000.0), 0)
         time_label = font_big.render(f"Time: {time_left}", True, text_color)
         screen.blit(time_label,(220, 10))
         if countdown_time_left(target_time) <= 0:
@@ -208,8 +219,10 @@ while running:
     elif game_active and timer_running:
         screen.blit(sad_img, (-10, 200))
     elif game_active and not timer_running:
-        pass 
-        # TODO entweder lose oder happy ja nach punktzahl
+        if score > 60:
+            screen.blit(happy_img, (-10, 200))
+        else:
+            screen.blit(lose_img, (-10, 200))
     
     manager.draw_ui(screen)
 
