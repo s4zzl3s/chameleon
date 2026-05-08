@@ -15,7 +15,8 @@
         },
         "font":
         {
-            "name": "Comic Sans MS"
+            "name": "Comic Sans MS",
+            "size": 20
         }
     },
     "horizontal_slider":

@@ -13,14 +13,19 @@ pygame.display.set_caption("Chameleon")
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 
-background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+# define fonts
 font = pygame.font.SysFont("Comic Sans MS", 26)
+font_small = pygame.font.SysFont("Comic Sans MS", 22)
+font_big = pygame.font.SysFont("Comic Sans MS", 40)
 title_font = pygame.font.SysFont("Comic Sans MS", 72)
 
 
 # load and scale images
 forest_img = pygame.image.load("img/forest_bg.jpg").convert()
 forest_img = pygame.transform.scale_by(forest_img, 0.6)
+
+background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+background.blit(forest_img, (-10, -10))
 
 
 def load_scale_img(path):
@@ -34,18 +39,32 @@ stripes_img = load_scale_img("img/stripes.png")
 mask_img = load_scale_img("img/mask.png")
 sad_img = load_scale_img("img/sad.png")
 happy_img = load_scale_img("img/happy.png")
+lose_img = load_scale_img("img/lose.png")
+
+# create mask for chameleon color
+cham_mask = pygame.Surface(mask_img.get_size(), pygame.SRCALPHA)
 
 
+# load sounds
+pygame.mixer.init()
 
-background.blit(forest_img, (-10, -10))
+click_sfx = pygame.mixer.Sound("sfx/switch.wav")
+ticking_sfx = pygame.mixer.Sound("sfx/ticking.ogg")
+
+
 
 # initialize ui elements
 manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT), theme_path="gui_theme.json")
 
 
 start_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((250, 480), (150, 75)),
-                                             text='Start Game',
+                                             text='Play',
                                              manager=manager)
+
+back_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((90, 480), (150, 75)),
+                                             text='Back',
+                                             manager=manager)
+back_button.hide()
 
 red_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((520, 475), (250, 25)), 
                                                     start_value= 88, value_range=(0, 255), 
@@ -60,29 +79,52 @@ blue_slider = pygame_gui.elements.UIHorizontalSlider(relative_rect=pygame.Rect((
                                                     manager=manager)
 
 
-# initialize text
+# initialize static text
 red_label = font.render("R", True, (255, 0, 0))
-
 green_label = font.render("G", True, (0, 255, 0))
-
 blue_label = font.render("B", True, (0, 0, 255))
-
 title_label = title_font.render("RGB Chameleon", True, (255, 255, 0))
+instruction_label = font_small.render("Use the sliders to blend into your surroundings\nbefore the timer runs out!", True, (255, 255, 255))
 
 
 # random color
-random_red = random.randint(0, 255)
-random_green = random.randint(0, 255)
-random_blue = random.randint(0, 255)
+def randomize_color():
+    random_red = random.randint(0, 255)
+    random_green = random.randint(0, 255)
+    random_blue = random.randint(0, 255)
 
-random_color = (random_red, random_green, random_blue)
+    random_color = (random_red, random_green, random_blue)
+    return random_color
 
-# create mask for chameleon color
-cham_mask = pygame.Surface(mask_img.get_size(), pygame.SRCALPHA)
+# negative color for ui text while game is running
+def negative_color(r, g, b):
+    return (255-r, 255-g, 255-b)
+
+screen_color = (0,0,0)
+text_color = (255, 255, 255)
+
+
+# countdown timer functions
+def set_countdown(time_offset) -> int:
+    current_time = pygame.time.get_ticks()
+    return current_time + time_offset
+
+def countdown_time_left(time) -> int:
+    return time - pygame.time.get_ticks()
+    
+target_time = 0
+
+
+# calculate score
+def calculate_score(rand_r, rand_g, rand_b, r, g, b):
+    delta_r = abs(rand_r - r)
+    delta_g = abs(rand_g - g)
+    delta_b = abs(rand_b - b)
 
 clock = pygame.time.Clock()
 running = True
 game_active = False
+timer_running = False
 
 while running:
     delta_time = clock.tick(60) / 1000.0
@@ -91,14 +133,20 @@ while running:
             running = False
 
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            click_sfx.set_volume(0.5)
+            click_sfx.play()
             if event.ui_element == start_button:
-                if not game_active:
-                    print("startgame")
-                    game_active = True
-                else:
-                    print("gamefinished")
-                    game_active = False
+                ticking_sfx.set_volume(0.5)
+                ticking_sfx.play()
+                target_time = set_countdown(10000)
+                timer_running = True
+                screen_color = randomize_color()
+                text_color = negative_color(screen_color[0], screen_color[1], screen_color[2])
+                game_active = True
 
+            if event.ui_element == back_button:
+                game_active = False
+        
         manager.process_events(event)
 
     manager.update(delta_time)
@@ -109,13 +157,34 @@ while running:
 
     chameleon_color = (cham_r,cham_g,cham_b)
 
-    # game loop
-    if game_active:
-        screen.fill(random_color)
-    else:
-        screen.blit(background, (0,0))
-        screen.blit(title_label, (100, 50))
+    # GAME LOOP
 
+    # render only in active game
+    if game_active:
+
+        if timer_running:
+            start_button.hide()
+            back_button.hide()
+        else:
+            ticking_sfx.stop()
+            start_button.show()
+            back_button.show()
+            score_label = font_big.render(f"You've got 0 points!", True, text_color)
+            screen.blit(score_label, (200, 50))
+
+        screen.fill(screen_color)
+        time_left = max((countdown_time_left(target_time) / 1000.0), 0)
+        time_label = font_big.render(f"Time: {time_left}", True, text_color)
+        screen.blit(time_label,(220, 10))
+        if countdown_time_left(target_time) <= 0:
+            timer_running = False
+
+    # render only in main menu
+    else:
+        back_button.hide()
+        screen.blit(background, (0,0))
+        screen.blit(title_label, (100, 10))
+        screen.blit(instruction_label, (110, 110))
 
 
     # draw color labels
@@ -123,15 +192,24 @@ while running:
     screen.blit(green_label, (490, 500))
     screen.blit(blue_label, (490, 535))
 
-
+    # render chameleon
     screen.blit(twig_img, (-10, 200))
 
+    # render user color
     cham_mask.fill(chameleon_color)
     cham_mask.blit(mask_img, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
     screen.blit(cham_mask, (-10, 200))
 
     screen.blit(stripes_img, (-10, 200))
-    screen.blit(happy_img, (-10, 200))
+
+    # chameleon mood
+    if not game_active:
+        screen.blit(happy_img, (-10, 200))
+    elif game_active and timer_running:
+        screen.blit(sad_img, (-10, 200))
+    elif game_active and not timer_running:
+        pass 
+        # TODO entweder lose oder happy ja nach punktzahl
     
     manager.draw_ui(screen)
 
